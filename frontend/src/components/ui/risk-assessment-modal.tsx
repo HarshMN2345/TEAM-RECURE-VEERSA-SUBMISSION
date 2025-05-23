@@ -485,11 +485,11 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
               className="relative w-full max-w-5xl bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700"
             >
               {/* Header */}
-              <div className="relative bg-gradient-to-r bg-blue-500 p-8 rounded-t-3xl">
+              <div className="relative bg-gradient-to-r bg-blue-500 p-6 sm:p-8 rounded-t-3xl">
                 <div className="absolute inset-0 bg-black/10 rounded-t-3xl"></div>
-                <div className="relative flex items-center justify-between text-white">
-                  <div>
-                    <h2 className="text-3xl font-bold mb-2">
+                <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between text-white">
+                  <div className="mb-4 sm:mb-0">
+                    <h2 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">
                       Heart Failure Risk Assessment
                     </h2>
                     <p className="text-blue-100 text-sm">
@@ -506,16 +506,16 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
               </div>
 
               {/* Step indicators */}
-              <div className="px-8 py-6 bg-gray-50 dark:bg-neutral-800 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-4">
+              <div className="px-4 sm:px-8 py-6 bg-gray-50 dark:bg-neutral-800 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-4 overflow-x-auto pb-2">
                   {steps.map((step, index) => {
                     const Icon = step.icon;
                     const isActive = step.id === currentStep;
                     const isCompleted = step.id < currentStep;
                     return (
-                      <div key={step.id} className="flex items-center">
+                      <div key={step.id} className="flex items-center flex-shrink-0">
                         <motion.div 
-                          className={`relative flex items-center justify-center w-12 h-12 rounded-2xl border-2 transition-all duration-300 ${
+                          className={`relative flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl border-2 transition-all duration-300 ${
                             isActive ? 'border-blue-500 bg-blue-500 text-white shadow-lg shadow-blue-500/30' :
                             isCompleted ? 'border-emerald-500 bg-emerald-500 text-white shadow-lg shadow-emerald-500/30' :
                             'border-gray-300 text-gray-400 bg-white dark:bg-neutral-700'
@@ -530,7 +530,7 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                           )}
                         </motion.div>
                         {index < steps.length - 1 && (
-                          <div className={`w-16 h-1 mx-3 rounded-full transition-all duration-500 ${
+                          <div className={`w-8 sm:w-16 h-1 mx-2 sm:mx-3 rounded-full transition-all duration-500 ${
                             isCompleted ? 'bg-emerald-500' : 'bg-gray-300'
                           }`} />
                         )}
@@ -549,9 +549,9 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
               </div>
 
               {/* Content area */}
-              <div className="flex min-h-[500px]">
+              <div className="flex flex-col md:flex-row min-h-[400px] md:min-h-[500px]">
                 {/* Current Risk Score - Left sidebar */}
-                <div className="w-80 p-8 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-neutral-800 dark:to-neutral-900 border-r border-gray-200 dark:border-gray-700">
+                <div className="w-full md:w-80 p-6 md:p-8 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-neutral-800 dark:to-neutral-900 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700">
                   <div className="space-y-6">
                     <h4 className="font-bold text-gray-900 dark:text-white text-lg">Current Risk Score</h4>
                     <div className="text-center">
@@ -590,7 +590,7 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                 </div>
 
                 {/* Form content - Right side */}
-                <div className="flex-1 p-8">
+                <div className="flex-1 p-6 md:p-8">
                   <AnimatePresence mode="wait">
                     {renderStepContent()}
                   </AnimatePresence>
@@ -598,17 +598,17 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
               </div>
 
               {/* Footer */}
-              <div className="border-t border-gray-200 dark:border-gray-700 px-8 py-6 bg-gray-50 dark:bg-neutral-800 rounded-b-3xl">
-                <div className="flex justify-between items-center">
+              <div className="border-t border-gray-200 dark:border-gray-700 px-4 sm:px-8 py-6 bg-gray-50 dark:bg-neutral-800 rounded-b-3xl">
+                <div className="flex flex-col sm:flex-row justify-between items-center">
                   <button
                     onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
                     disabled={currentStep === 1}
-                    className="flex items-center px-6 py-3 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 dark:bg-neutral-700 dark:text-white dark:border-gray-600 dark:hover:bg-neutral-600"
+                    className="w-full sm:w-auto flex items-center justify-center px-6 py-3 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-xl shadow-sm hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 dark:bg-neutral-700 dark:text-white dark:border-gray-600 dark:hover:bg-neutral-600 mb-3 sm:mb-0"
                   >
                     Previous
                   </button>
                   
-                  <div className="flex items-center space-x-2">
+                  <div className="hidden sm:flex items-center space-x-2">
                     {steps.map((_, index) => (
                       <div
                         key={index}
@@ -621,11 +621,11 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                     ))}
                   </div>
                   
-                  <div className="flex space-x-3">
+                  <div className="w-full sm:w-auto flex space-x-3">
                     {currentStep < 5 ? (
                       <button
                         onClick={() => setCurrentStep(Math.min(5, currentStep + 1))}
-                        className="flex items-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r bg-blue-500 shadow-lg hover:shadow-xl hover:bg-blue-600 transition-all duration-200"
+                        className="w-full sm:w-auto flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r bg-blue-500 shadow-lg hover:shadow-xl hover:bg-blue-600 transition-all duration-200"
                       >
                         Next
                         <ChevronRight className="ml-2 h-4 w-4" />
@@ -633,7 +633,7 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                     ) : (
                       <button
                         onClick={onClose}
-                        className="flex items-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-emerald-600 to-green-600 rounded-xl shadow-lg hover:shadow-xl hover:from-emerald-700 hover:to-green-700 transition-all duration-200"
+                        className="w-full sm:w-auto flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-emerald-600 to-green-600 rounded-xl shadow-lg hover:shadow-xl hover:from-emerald-700 hover:to-green-700 transition-all duration-200"
                       >
                         <Check className="mr-2 h-4 w-4" />
                         Complete Assessment
