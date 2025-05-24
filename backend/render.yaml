@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: flask-risk-api
+    env: python
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: gunicorn app:app
+    workingDir: backend
+    envVars:
+      - key: PORT
+        value: 10000
