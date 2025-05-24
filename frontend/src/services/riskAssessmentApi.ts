@@ -26,7 +26,7 @@ export interface RiskAssessmentError {
 }
 
 // Base API URL - adjust this to match your Flask server
-const API_BASE_URL = 'https://c0ea-103-46-200-236.ngrok-free.app';
+const API_BASE_URL = 'https://readmission-risk-prediction-620m.onrender.com';
 
 // Map frontend field names to backend field names
 const mapFormDataToApiInputs = (formData: RiskAssessmentInput) => {
