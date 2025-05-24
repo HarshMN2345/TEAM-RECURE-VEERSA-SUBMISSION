@@ -1,7 +1,8 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
-import { X, User, Heart, Activity, AlertTriangle, Calendar, ChevronRight, Check } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, User, Heart, Activity, AlertTriangle, Calendar, ChevronRight, Check, Loader2 } from "lucide-react";
+import { predictRisk, testApiConnection, RiskAssessmentInput } from "../../services/riskAssessmentApi";
 
 interface RiskAssessmentModalProps {
   isOpen: boolean;
@@ -10,33 +11,49 @@ interface RiskAssessmentModalProps {
 
 export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
-    // Step 1 - Patient Demographics
+  const [formData, setFormData] = useState<RiskAssessmentInput>({
     age: "",
     gender: "M",
-    
-    // Step 2 - Clinical History
     admissionType: "Urgent",
     totalDiagnoses: "",
     numberOfPreviousAdmissions: "",
     lengthOfStay: "",
     daysSinceLastAdmission: "",
-    
-    // Step 3 - Current Admission
     totalProcedures: "",
     totalLabTests: "",
     uniqueLabTests: "",
-    
-    // Step 4 - Severity Assessment
-    drgMortalityRisk: "",
-    drgSeverity: "",
-    
-    // Step 5 - Discharge Planning
+    drgMortalityRisk: "0",
+    drgSeverity: "0",
     dischargeType: "Home",
     insurance: "Self pay"
   });
 
-  const [riskScore, setRiskScore] = useState(34.0);
+  const [riskScore, setRiskScore] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [isApiConnected, setIsApiConnected] = useState(false);
+  const [isAssessmentComplete, setIsAssessmentComplete] = useState(false);
+
+  // Test API connection on component mount
+  useEffect(() => {
+    const checkApiConnection = async () => {
+      try {
+        const connected = await testApiConnection();
+        setIsApiConnected(connected);
+        if (!connected) {
+          setApiError("Unable to connect to risk assessment API. Please ensure the backend server is running.");
+        }
+      } catch (error) {
+        setIsApiConnected(false);
+        setApiError("Failed to connect to API");
+      }
+    };
+    
+    if (isOpen) {
+      checkApiConnection();
+      setIsAssessmentComplete(false);
+    }
+  }, [isOpen]);
 
   const steps = [
     { id: 1, title: "Patient Demographics", icon: User, description: "Basic patient information" },
@@ -70,36 +87,27 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
     };
   };
 
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Simple risk calculation for demo
-    const newScore = calculateRisk({ ...formData, [field]: value });
-    setRiskScore(newScore);
+  const updateRiskScore = async (updatedFormData: RiskAssessmentInput) => {
+    if (!isApiConnected) return;
+    
+    setIsLoading(true);
+    setApiError(null);
+    
+    try {
+      const response = await predictRisk(currentStep, updatedFormData);
+      setRiskScore(response.risk_score);
+      console.log(response);
+    } catch (error) {
+      console.error('Risk prediction error:', error);
+      setApiError(error instanceof Error ? error.message : 'Failed to calculate risk score');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const calculateRisk = (data: typeof formData) => {
-    let score = 0;
-    if (parseInt(data.age) > 65) score += 15;
-    if (parseInt(data.age) > 75) score += 10;
-    if (parseInt(data.numberOfPreviousAdmissions) > 2) score += 20;
-    if (parseInt(data.lengthOfStay) > 7) score += 15;
-    if (parseInt(data.totalProcedures) > 2) score += 10;
-    if (parseInt(data.totalLabTests) > 2) score += 10;
-    if (parseInt(data.drgMortalityRisk) > 2) score += 10;
-    return Math.min(score, 95);
-  };
-
-  // Helper functions for dynamic calculations
-  const getChronicityIndex = () => {
-    const previousAdmissions = parseInt(formData.numberOfPreviousAdmissions) || 0;
-    const lengthOfStay = parseInt(formData.lengthOfStay) || 0;
-    return previousAdmissions * lengthOfStay;
-  };
-
-  const getCriticalityScore = () => {
-    const mortalityRisk = parseInt(formData.drgMortalityRisk) || 0;
-    const severity = parseInt(formData.drgSeverity) || 0;
-    return mortalityRisk * severity;
+  const handleInputChange = (field: keyof RiskAssessmentInput, value: string | boolean) => {
+    const updatedFormData = { ...formData, [field]: value };
+    setFormData(updatedFormData);
   };
 
   const renderStepContent = () => {
@@ -139,10 +147,10 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                     <span className="text-gray-400 text-sm">years</span>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-2 flex items-center">
+                <div className="text-xs text-gray-500 mt-2 flex items-center">
                   <div className="w-1 h-1 bg-blue-400 rounded-full mr-2"></div>
                   Range: 0-120 years
-                </p>
+                </div>
               </div>
               
               <div className="group">
@@ -163,6 +171,7 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
           </motion.div>
         );
       case 2:
+        const chronicityIndex = (parseInt(formData.numberOfPreviousAdmissions) || 0) * (parseInt(formData.lengthOfStay) || 0);
         return (
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
@@ -191,53 +200,64 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 dark:bg-neutral-800 dark:border-gray-600 dark:text-white dark:focus:border-blue-400"
                 >
                   <option value="Urgent">Urgent</option>
-                  <option value="Elective">Elective</option>
                   <option value="Emergency">Emergency</option>
                 </select>
               </div>
               
               <div className="group">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  Total Diagnoses
+                  Total Diagnoses (0-10)
                 </label>
                 <input
                   type="number"
+                  min="0"
+                  max="10"
                   value={formData.totalDiagnoses}
                   onChange={(e) => handleInputChange("totalDiagnoses", e.target.value)}
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 dark:bg-neutral-800 dark:border-gray-600 dark:text-white dark:focus:border-blue-400"
                   placeholder="Total number of diagnoses"
                 />
+                 <div className="text-xs text-gray-500 mt-2 flex items-center">
+                  <div className="w-1 h-1 bg-blue-400 rounded-full mr-2"></div>
+                  Range: 0-10
+                </div>
               </div>
 
-              <div className="group">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  Number of Previous Admissions
-                </label>
-                <input
-                  type="number"
-                  value={formData.numberOfPreviousAdmissions}
-                  onChange={(e) => handleInputChange("numberOfPreviousAdmissions", e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 dark:bg-neutral-800 dark:border-gray-600 dark:text-white dark:focus:border-blue-400"
-                  placeholder="Number of previous admissions"
-                />
-              </div>
-
-              <div className="group">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  Length of Current Stay
-                </label>
-                <div className="relative">
+              <div>
+                <h4 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-3">Chronicity Index</h4>
+                <div className="group">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                    Number of Previous Admissions
+                  </label>
                   <input
                     type="number"
-                    value={formData.lengthOfStay}
-                    onChange={(e) => handleInputChange("lengthOfStay", e.target.value)}
+                    value={formData.numberOfPreviousAdmissions}
+                    onChange={(e) => handleInputChange("numberOfPreviousAdmissions", e.target.value)}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 dark:bg-neutral-800 dark:border-gray-600 dark:text-white dark:focus:border-blue-400"
-                    placeholder="Duration of stay (e.g., 5)"
+                    placeholder="Number of previous admissions"
                   />
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <span className="text-gray-400 text-sm">days</span>
+                </div>
+
+                <div className="group mt-4">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                    Length of Current Stay
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={formData.lengthOfStay}
+                      onChange={(e) => handleInputChange("lengthOfStay", e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 dark:bg-neutral-800 dark:border-gray-600 dark:text-white dark:focus:border-blue-400"
+                      placeholder="Duration of stay (e.g., 5)"
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <span className="text-gray-400 text-sm">days</span>
+                    </div>
                   </div>
                 </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
+                  Calculated Chronicity Index: <span className="font-semibold text-blue-500">{chronicityIndex}</span>
+                </p>
               </div>
 
               <div className="group">
@@ -321,6 +341,7 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
           </motion.div>
         );
       case 4:
+        const criticalityScore = (parseFloat(formData.drgMortalityRisk) || 0) * (parseFloat(formData.drgSeverity) || 0);
         return (
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
@@ -341,68 +362,51 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="group">
-                  <div className="flex items-center p-4 border-2 border-gray-200 rounded-xl hover:border-blue-300 transition-all duration-200 dark:border-gray-600 dark:hover:border-blue-500">
-                    <div className="relative flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={formData.drgMortalityRisk !== "0" && formData.drgMortalityRisk !== ""}
-                        onChange={(e) => handleInputChange("drgMortalityRisk", e.target.checked ? "1" : "0")}
-                        className="sr-only"
-                      />
-                      <div 
-                        className={`w-5 h-5 border-2 rounded transition-all duration-200 cursor-pointer ${
-                          formData.drgMortalityRisk !== "0" && formData.drgMortalityRisk !== "" ? 'bg-blue-500 border-blue-500' : 'border-gray-300 hover:border-blue-400'
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleInputChange("drgMortalityRisk", formData.drgMortalityRisk === "1" ? "0" : "1");
-                        }}
-                      >
-                        {(formData.drgMortalityRisk !== "0" && formData.drgMortalityRisk !== "") && (
-                          <Check className="w-3 h-3 text-white m-0.5" />
-                        )}
-                      </div>
-                    </div>
-                    <div className="ml-4 flex-1">
-                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer">
+                  <div className="flex flex-col p-4 border-2 border-gray-200 rounded-xl hover:border-blue-300 transition-all duration-200 dark:border-gray-600 dark:hover:border-blue-500">
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                         DRG Mortality Risk
                       </label>
-                      <p className="text-xs text-gray-500 mt-1">Higher risk of mortality</p>
+                      <span className="text-sm font-semibold text-blue-500 dark:text-blue-400">{formData.drgMortalityRisk}</span>
                     </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="4" // Adjusted max based on typical DRG scales
+                      value={formData.drgMortalityRisk}
+                      onChange={(e) => handleInputChange("drgMortalityRisk", e.target.value)}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-2">Higher risk of mortality (0-4 scale)</p>
                   </div>
                 </div>
                 
                 <div className="group">
-                  <div className="flex items-center p-4 border-2 border-gray-200 rounded-xl hover:border-blue-300 transition-all duration-200 dark:border-gray-600 dark:hover:border-blue-500">
-                    <div className="relative flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={formData.drgSeverity !== "0" && formData.drgSeverity !== ""}
-                        onChange={(e) => handleInputChange("drgSeverity", e.target.checked ? "1" : "0")}
-                        className="sr-only"
-                      />
-                      <div 
-                        className={`w-5 h-5 border-2 rounded transition-all duration-200 cursor-pointer ${
-                          formData.drgSeverity !== "0" && formData.drgSeverity !== "" ? 'bg-blue-500 border-blue-500' : 'border-gray-300 hover:border-blue-400'
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleInputChange("drgSeverity", formData.drgSeverity === "1" ? "0" : "1");
-                        }}
-                      >
-                        {(formData.drgSeverity !== "0" && formData.drgSeverity !== "") && (
-                          <Check className="w-3 h-3 text-white m-0.5" />
-                        )}
-                      </div>
-                    </div>
-                    <div className="ml-4 flex-1">
-                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer">
+                  <div className="flex flex-col p-4 border-2 border-gray-200 rounded-xl hover:border-blue-300 transition-all duration-200 dark:border-gray-600 dark:hover:border-blue-500">
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                         DRG Severity
                       </label>
-                      <p className="text-xs text-gray-500 mt-1">Higher severity of illness</p>
+                      <span className="text-sm font-semibold text-blue-500 dark:text-blue-400">{formData.drgSeverity}</span>
                     </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="4" // Adjusted max based on typical DRG scales
+                      value={formData.drgSeverity}
+                      onChange={(e) => handleInputChange("drgSeverity", e.target.value)}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-2">Higher severity of illness (0-4 scale)</p>
                   </div>
                 </div>
+              </div>
+              <div className="mt-6 text-center">
+                <h4 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">Criticality Score</h4>
+                <p className="text-2xl font-bold text-blue-500 dark:text-blue-400">
+                  {criticalityScore.toFixed(2)}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">(DRG Mortality Risk * DRG Severity)</p>
               </div>
             </div>
           </motion.div>
@@ -423,41 +427,80 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
               <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent dark:from-gray-200 dark:to-gray-400">
                 Discharge Planning
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mt-2">Risk evaluation summary</p>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">Provide discharge details and complete the assessment.</p>
             </div>
             
-            <div className="text-center space-y-6">
-              <div className={`p-8 ${riskLevel.bgColor} ${riskLevel.borderColor} border-2 rounded-2xl shadow-lg dark:bg-neutral-800 dark:border-gray-600`}>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
-                  30-day readmission probability
-                </p>
-                <div className="relative">
-                  <div className={`text-6xl font-bold bg-gradient-to-r ${riskLevel.gradient} bg-clip-text text-transparent mb-2`}>
-                    {riskScore.toFixed(1)}%
-                  </div>
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(riskScore, 100)}%` }}
-                    transition={{ duration: 1, ease: "easeOut" }}
-                    className={`h-2 bg-gradient-to-r ${riskLevel.gradient} rounded-full mx-auto mb-4`}
-                    style={{ maxWidth: '200px' }}
-                  />
-                </div>
-                <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-bold ${riskLevel.color} ${riskLevel.bgColor} border ${riskLevel.borderColor}`}>
-                  {getRiskLevel(riskScore).level}
-                </div>
+            <div className="space-y-6">
+              <div className="group">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                  Discharge Destination
+                </label>
+                <select
+                  value={formData.dischargeType}
+                  onChange={(e) => handleInputChange("dischargeType", e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 dark:bg-neutral-800 dark:border-gray-600 dark:text-white dark:focus:border-blue-400"
+                >
+                  <option value="Home">Home</option>
+                  <option value="Rehabilitation part of hospital">Rehabilitation part of hospital</option>
+                  <option value="Skilled Nursing Facility (SNF)">Skilled Nursing Facility (SNF)</option>
+                  <option value="Home Health Care">Home Health Care</option>
+                  <option value="Long Term Care in Hospital">Long Term Care in Hospital</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
-              
-              <div className="bg-white dark:bg-neutral-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                  Based on the provided clinical data, this patient has a <span className={`font-semibold ${riskLevel.color}`}>
-                  {getRiskLevel(riskScore).level.toLowerCase()}</span> of readmission within 30 days. 
-                  {riskScore < 20 && " Consider standard discharge planning with routine follow-up."}
-                  {riskScore >= 20 && riskScore < 40 && " Enhanced monitoring and targeted interventions may be beneficial."}
-                  {riskScore >= 40 && " Intensive care coordination and close follow-up are strongly recommended."}
-                </p>
+
+              <div className="group">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                  Insurance
+                </label>
+                <select
+                  value={formData.insurance}
+                  onChange={(e) => handleInputChange("insurance", e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 dark:bg-neutral-800 dark:border-gray-600 dark:text-white dark:focus:border-blue-400"
+                >
+                  <option value="Self pay">Self pay</option>
+                  <option value="Private">Private</option>
+                  <option value="Medicaid">Medicaid</option>
+                  <option value="Medicare">Medicare</option>
+                  <option value="Government">Government</option>
+                </select>
               </div>
             </div>
+
+            {isAssessmentComplete && (
+              <div className="text-center space-y-6 mt-8">
+                <div className={`p-8 ${riskLevel.bgColor} ${riskLevel.borderColor} border-2 rounded-2xl shadow-lg dark:bg-neutral-800 dark:border-gray-600`}>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
+                    30-day readmission probability
+                  </p>
+                  <div className="relative">
+                    <div className={`text-6xl font-bold bg-gradient-to-r ${riskLevel.gradient} bg-clip-text text-transparent mb-2`}>
+                      {riskScore.toFixed(1)}%
+                    </div>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(riskScore, 100)}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                      className={`h-2 bg-gradient-to-r ${riskLevel.gradient} rounded-full mx-auto mb-4`}
+                      style={{ maxWidth: '200px' }}
+                    />
+                  </div>
+                  <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-bold ${riskLevel.color} ${riskLevel.bgColor} border ${riskLevel.borderColor}`}> 
+                    {riskLevel.level}
+                  </div>
+                </div>
+                
+                <div className="bg-white dark:bg-neutral-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                    Based on the provided clinical data, this patient has a <span className={`font-semibold ${riskLevel.color}`}>
+                    {riskLevel.level.toLowerCase()}</span> of readmission within 30 days. 
+                    {riskScore < 20 && " Consider standard discharge planning with routine follow-up."}
+                    {riskScore >= 20 && riskScore < 40 && " Enhanced monitoring and targeted interventions may be beneficial."}
+                    {riskScore >= 40 && " Intensive care coordination and close follow-up are strongly recommended."}
+                  </p>
+                </div>
+              </div>
+            )}
           </motion.div>
         );
       default:
@@ -554,19 +597,46 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                 <div className="w-full md:w-80 p-6 md:p-8 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-neutral-800 dark:to-neutral-900 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700">
                   <div className="space-y-6">
                     <h4 className="font-bold text-gray-900 dark:text-white text-lg">Current Risk Score</h4>
-                    <div className="text-center">
-                      <motion.div
-                        key={riskScore}
-                        initial={{ scale: 1.1, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ duration: 0.3 }}
-                        className={`text-4xl font-bold ${getRiskLevel(riskScore).color} mb-3`}
-                      >
-                        {riskScore.toFixed(1)}%
-                      </motion.div>
-                      <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${getRiskLevel(riskScore).color} ${getRiskLevel(riskScore).bgColor} border ${getRiskLevel(riskScore).borderColor}`}>
-                        {getRiskLevel(riskScore).level}
+                    
+                    {/* API Connection Status */}
+                    {!isApiConnected && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <p className="text-red-600 text-sm font-medium">API Disconnected</p>
+                        <p className="text-red-500 text-xs mt-1">Ensure Flask server is running on port 5000</p>
                       </div>
+                    )}
+                    
+                    {/* API Error */}
+                    {apiError && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <p className="text-red-600 text-sm font-medium">Error</p>
+                        <p className="text-red-500 text-xs mt-1">{apiError}</p>
+                      </div>
+                    )}
+                    
+                    <div className="text-center">
+                      {isLoading ? (
+                        <div className="flex flex-col items-center">
+                          <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
+                          <div className="text-sm text-gray-500">Calculating risk...</div>
+                        </div>
+                      ) : (
+                        <>
+                          <motion.div
+                            key={riskScore}
+                            initial={{ scale: 1.1, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.3 }}
+                            className={`text-4xl font-bold ${getRiskLevel(riskScore).color} mb-3`}
+                          >
+                            {riskScore.toFixed(1)}%
+                          </motion.div>
+                          <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${getRiskLevel(riskScore).color} ${getRiskLevel(riskScore).bgColor} border ${getRiskLevel(riskScore).borderColor}`}>
+                            {getRiskLevel(riskScore).level}
+                          </div>
+                        </>
+                      )}
+                      
                       <p className="text-xs text-gray-500 mt-3">30-day readmission probability</p>
                       
                       {/* Progress bar */}
@@ -583,6 +653,17 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                           <span>0%</span>
                           <span>50%</span>
                           <span>100%</span>
+                        </div>
+                      </div>
+                      
+                      {/* Data completeness indicator */}
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                        <p className="text-xs text-gray-500 mb-2">Step {currentStep} of 5</p>
+                        <div className="w-full bg-gray-200 rounded-full h-1">
+                          <div 
+                            className="bg-blue-500 h-1 rounded-full transition-all duration-300"
+                            style={{ width: `${(currentStep / 5) * 100}%` }}
+                          />
                         </div>
                       </div>
                     </div>
@@ -624,15 +705,21 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                   <div className="w-full sm:w-auto flex space-x-3">
                     {currentStep < 5 ? (
                       <button
-                        onClick={() => setCurrentStep(Math.min(5, currentStep + 1))}
-                        className="w-full sm:w-auto flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r bg-blue-500 shadow-lg hover:shadow-xl hover:bg-blue-600 transition-all duration-200"
+                        onClick={async () => {
+                          await updateRiskScore(formData);
+                          setCurrentStep(currentStep + 1);
+                        }}
+                        className="w-full sm:w-auto flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg hover:shadow-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200"
                       >
                         Next
                         <ChevronRight className="ml-2 h-4 w-4" />
                       </button>
                     ) : (
                       <button
-                        onClick={onClose}
+                        onClick={async () => {
+                          await updateRiskScore(formData);
+                          setIsAssessmentComplete(true);
+                        }}
                         className="w-full sm:w-auto flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-emerald-600 to-green-600 rounded-xl shadow-lg hover:shadow-xl hover:from-emerald-700 hover:to-green-700 transition-all duration-200"
                       >
                         <Check className="mr-2 h-4 w-4" />
@@ -648,4 +735,4 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
       )}
     </AnimatePresence>
   );
-} 
+}
