@@ -10,7 +10,6 @@ CORS(app)
 model_bundle = joblib.load("best_clf.pkl")
 model = model_bundle["model"]
 feature_order = model_bundle["features"]
-print(feature_order)
 
 
 @app.route("/predict-risk", methods=["POST"])
@@ -59,9 +58,7 @@ def predict_risk():
                             input_dict[f"insurance_{insurance}"] = 1
                     
 
-        print(input_dict)
         X = np.array([[input_dict.get(feature, 0) for feature in feature_order]])
-        # === Predict ===
         risk_score = (model.predict_proba(X)[0][1])*100
         print(risk_score)
         return jsonify({
