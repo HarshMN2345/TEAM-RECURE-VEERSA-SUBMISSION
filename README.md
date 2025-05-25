@@ -9,6 +9,10 @@ Recure is a web application that uses advanced machine learning to help clinicia
 *   Harsh Mahajan
 *   Ishika Deshwal
 
+## Problem Statement (Case-4)-
+
+![Problem Statement](images/PS.png)
+
 ## Source Code
 
 [View on GitHub](https://github.com/HarshMN2345/TEAM-RECURE-VEERSA-SUBMISSION)
@@ -39,6 +43,18 @@ Details about the model training process, dataset, and methodologies can be foun
 ![ML Model 2](images/ml2.jpg)
 ![ML Model 3](images/ml3.jpg)
 ![ML Model 4](images/ml4.jpg)
+
+### Model (Random Forest Classifier) Report:-
+
+**Accuracy:** 81.6%
+
+
+![ML Model 4](images/CR.png)
+
+### ML Pipeline
+
+![Pipeline](images/ml5.png)
+
 
 ## Features
 
