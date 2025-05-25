@@ -5,7 +5,7 @@ Recure is a web application that uses advanced machine learning to help clinicia
 ## Team Recure (Veersa Technologies Hackathon)
 
 *   Aryan Gupta 
-*   Diya Dhankar
+*   Diya Dhankhar
 *   Harsh Mahajan
 *   Ishika Deshwal
 
