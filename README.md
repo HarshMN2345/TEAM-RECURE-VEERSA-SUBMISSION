@@ -9,6 +9,10 @@ Recure is a web application that uses advanced machine learning to help clinicia
 *   Harsh Mahajan
 *   Ishika Deshwal
 
+## Source Code
+
+[View on GitHub](https://github.com/HarshMN2345/TEAM-RECURE-VEERSA-SUBMISSION)
+
 ## Screenshots
 
 ![Recure Frontpage](images/frontpage.jpg)
@@ -17,6 +21,16 @@ Recure is a web application that uses advanced machine learning to help clinicia
 
 ![Recure final score](images/finalscore.jpg)
 
+## Model Training
+
+Details about the model training process, dataset, and methodologies can be found in the `model training` directory.
+
+### Model Visualizations
+
+![ML Model 1](images/ml1.jpg)
+![ML Model 2](images/ml2.jpg)
+![ML Model 3](images/ml3.jpg)
+![ML Model 4](images/ml4.jpg)
 
 ## Features
 
