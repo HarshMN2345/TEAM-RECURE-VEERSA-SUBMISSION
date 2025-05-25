@@ -25,6 +25,10 @@ The UI/UX designs for Recure were created in Figma. You can view the designs her
 
 ![Recure final score](images/finalscore.jpg)
 
+## Video Demo
+
+[Watch the project demo video](https://drive.google.com/file/d/1VbuYXbgHqtECfsVfBGvwD-_tW3tD57VU/view?usp=sharing)
+
 ## Model Training
 
 Details about the model training process, dataset, and methodologies can be found in the `model training` directory.
