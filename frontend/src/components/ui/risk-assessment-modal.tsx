@@ -40,6 +40,12 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
   const [totalProceduresError, setTotalProceduresError] = useState<string | null>(null);
   const [totalLabTestsError, setTotalLabTestsError] = useState<string | null>(null);
   const [uniqueLabTestsError, setUniqueLabTestsError] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<keyof RiskAssessmentInput, string | null>>(
+    Object.keys(formData).reduce((acc, key) => {
+      acc[key as keyof RiskAssessmentInput] = null;
+      return acc;
+    }, {} as Record<keyof RiskAssessmentInput, string | null>)
+  );
 
   // Test API connection on component mount
   useEffect(() => {
@@ -193,9 +199,46 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
     }
     const updatedFormData = { ...formData, [field]: value };
     setFormData(updatedFormData);
+    setFormErrors({ ...formErrors, [field]: null });
     if (isApiConnected) {
       updateRiskScore(updatedFormData);
     }
+  };
+
+  const validateStep = (step: number): boolean => {
+    let errors: Record<keyof RiskAssessmentInput, string | null> = { ...formErrors };
+    let isValid = true;
+    const currentFields: (keyof RiskAssessmentInput)[] = [];
+
+    switch (step) {
+      case 1:
+        currentFields.push("age", "gender");
+        break;
+      case 2:
+        currentFields.push("admissionType", "totalDiagnoses", "numberOfPreviousAdmissions", "lengthOfStay", "daysSinceLastAdmission");
+        break;
+      case 3:
+        currentFields.push("totalProcedures", "totalLabTests", "uniqueLabTests");
+        break;
+      case 4:
+        currentFields.push("drgMortalityRisk", "drgSeverity");
+        break;
+      case 5:
+        currentFields.push("dischargeType", "insurance");
+        break;
+    }
+
+    currentFields.forEach(field => {
+      if (!formData[field] || formData[field]?.toString().trim() === "") {
+        errors[field] = "This field is required";
+        isValid = false;
+      } else {
+        errors[field] = null;
+      }
+    });
+
+    setFormErrors(errors);
+    return isValid;
   };
 
   const renderStepContent = () => {
@@ -249,6 +292,16 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                   >
                     <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
                     {ageError}
+                  </motion.div>
+                )}
+                {formErrors.age && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-2 text-sm text-red-500 flex items-center"
+                  >
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
+                    {formErrors.age}
                   </motion.div>
                 )}
                 <div className="text-xs text-gray-500 mt-2 flex items-center">
@@ -415,11 +468,21 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                   <option value="Urgent">Urgent</option>
                   <option value="Emergency">Emergency</option>
                 </select>
+                {formErrors.admissionType && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-2 text-sm text-red-500 flex items-center"
+                  >
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
+                    {formErrors.admissionType}
+                  </motion.div>
+                )}
               </div>
               
               <div className="group">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  Total Diagnoses (0-10)
+                  Total Diagnoses
                 </label>
                 <input
                   type="number"
@@ -430,10 +493,16 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 dark:bg-neutral-800 dark:border-gray-600 dark:text-white dark:focus:border-blue-400"
                   placeholder="Total number of diagnoses"
                 />
-                 <div className="text-xs text-gray-500 mt-2 flex items-center">
-                  <div className="w-1 h-1 bg-blue-400 rounded-full mr-2"></div>
-                  Range: 0-10
-                </div>
+                {formErrors.totalDiagnoses && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-2 text-sm text-red-500 flex items-center"
+                  >
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
+                    {formErrors.totalDiagnoses}
+                  </motion.div>
+                )}
               </div>
 
               <div>
@@ -462,6 +531,16 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                     >
                       <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
                       {previousAdmissionsError}
+                    </motion.div>
+                  )}
+                  {formErrors.numberOfPreviousAdmissions && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-2 text-sm text-red-500 flex items-center"
+                    >
+                      <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
+                      {formErrors.numberOfPreviousAdmissions}
                     </motion.div>
                   )}
                 </div>
@@ -495,6 +574,16 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                     >
                       <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
                       {lengthOfStayError}
+                    </motion.div>
+                  )}
+                  {formErrors.lengthOfStay && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-2 text-sm text-red-500 flex items-center"
+                    >
+                      <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
+                      {formErrors.lengthOfStay}
                     </motion.div>
                   )}
                 </div>
@@ -532,6 +621,16 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                   >
                     <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
                     {daysSinceLastAdmissionError}
+                  </motion.div>
+                )}
+                {formErrors.daysSinceLastAdmission && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-2 text-sm text-red-500 flex items-center"
+                  >
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
+                    {formErrors.daysSinceLastAdmission}
                   </motion.div>
                 )}
               </div>
@@ -599,6 +698,16 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                     {totalProceduresError}
                   </motion.div>
                 )}
+                {formErrors.totalProcedures && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-2 text-sm text-red-500 flex items-center"
+                  >
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
+                    {formErrors.totalProcedures}
+                  </motion.div>
+                )}
               </div>
               
               <div className="group">
@@ -627,6 +736,16 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                     {totalLabTestsError}
                   </motion.div>
                 )}
+                {formErrors.totalLabTests && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-2 text-sm text-red-500 flex items-center"
+                  >
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
+                    {formErrors.totalLabTests}
+                  </motion.div>
+                )}
               </div>
 
               <div className="group">
@@ -652,7 +771,7 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                     className="mt-2 text-sm text-red-500 flex items-center"
                   >
                     <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
-                    {uniqueLabTestsError}
+                    {formErrors.uniqueLabTests}
                   </motion.div>
                 )}
               </div>
@@ -899,6 +1018,16 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-500"
                     />
                     <p className="text-xs text-gray-500 mt-2">Higher risk of mortality (0-4 scale)</p>
+                    {formErrors.drgMortalityRisk && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-2 text-sm text-red-500 flex items-center"
+                      >
+                        <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
+                        {formErrors.drgMortalityRisk}
+                      </motion.div>
+                    )}
                   </div>
                 </div>
                 
@@ -920,6 +1049,16 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-500"
                     />
                     <p className="text-xs text-gray-500 mt-2">Higher severity of illness (0-4 scale)</p>
+                    {formErrors.drgSeverity && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-2 text-sm text-red-500 flex items-center"
+                      >
+                        <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
+                        {formErrors.drgSeverity}
+                      </motion.div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -962,6 +1101,16 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                   <option value="Long Term Care in Hospital">Long Term Care in Hospital</option>
                   <option value="Other">Other</option>
                 </select>
+                {formErrors.dischargeType && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-2 text-sm text-red-500 flex items-center"
+                  >
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
+                    {formErrors.dischargeType}
+                  </motion.div>
+                )}
               </div>
 
               <div className="group">
@@ -979,6 +1128,16 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                   <option value="Medicare">Medicare</option>
                   <option value="Government">Government</option>
                 </select>
+                {formErrors.insurance && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-2 text-sm text-red-500 flex items-center"
+                  >
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></div>
+                    {formErrors.insurance}
+                  </motion.div>
+                )}
               </div>
             </div>
 
@@ -1442,10 +1601,13 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                     {currentStep < 5 ? (
                       <button
                         onClick={async () => {
-                          await updateRiskScore(formData);
-                          setCurrentStep(currentStep + 1);
+                          if (validateStep(currentStep)) {
+                            await updateRiskScore(formData);
+                            setCurrentStep(currentStep + 1);
+                          }
                         }}
                         className="w-full sm:w-auto flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg hover:shadow-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200"
+                        disabled={Object.values(formErrors).some(error => error !== null)}
                       >
                         Next
                         <ChevronRight className="ml-2 h-4 w-4" />
@@ -1453,10 +1615,13 @@ export function RiskAssessmentModal({ isOpen, onClose }: RiskAssessmentModalProp
                     ) : (
                       <button
                         onClick={async () => {
-                          await updateRiskScore(formData);
-                          setIsAssessmentComplete(true);
+                          if (validateStep(currentStep)) {
+                            await updateRiskScore(formData);
+                            setIsAssessmentComplete(true);
+                          }
                         }}
                         className="w-full sm:w-auto flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-emerald-600 to-green-600 rounded-xl shadow-lg hover:shadow-xl hover:from-emerald-700 hover:to-green-700 transition-all duration-200"
+                        disabled={Object.values(formErrors).some(error => error !== null)}
                       >
                         <Check className="mr-2 h-4 w-4" />
                         Complete Assessment
