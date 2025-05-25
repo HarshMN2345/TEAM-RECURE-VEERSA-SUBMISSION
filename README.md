@@ -15,7 +15,7 @@ Recure is a web application that uses advanced machine learning to help clinicia
 
 ## Design
 
-The UI/UX designs for Recure were created in Figma. You can view the designs here: [Link to Figma Designs](#) (Please replace # with your actual Figma link).
+The UI/UX designs for Recure were created in Figma. You can view the designs here: [Link to Figma Designs](https://www.figma.com/design/wxG5bLpQGftYag1qWckNMA/Veersa-Hackathon-UI?node-id=1-6&t=CvIEOpccc9CjBxyB-1).
 
 ## Screenshots
 
