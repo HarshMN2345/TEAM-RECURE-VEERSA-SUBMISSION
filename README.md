@@ -49,6 +49,41 @@ Details about the model training process, dataset, and methodologies can be foun
 *   **Backend:** Flask (Python), scikit-learn, pandas, numpy
 *   **Deployment (Backend):** Render (using Gunicorn)
 
+## Architecture
+
+![Application Architecture](images/architecture.jpg)
+
+The Recure application follows a client-server architecture:
+
+*   **Frontend (Client-Side):**
+    *   Built with Next.js and React, the frontend is responsible for the user interface and user experience.
+    *   It captures patient data through a multi-step form.
+    *   It communicates with the backend API to send data and receive risk score predictions.
+    *   Shadcn UI and Tailwind CSS are used for styling, and Framer Motion for animations.
+
+*   **Backend (Server-Side):**
+    *   A Flask (Python) application serves as the backend.
+    *   It exposes a RESTful API endpoint (`/predict-risk`) to receive patient data from the frontend.
+    *   It preprocesses the incoming data, handles feature engineering (e.g., creating derived features, one-hot encoding categorical variables).
+    *   The backend is deployed on Render.
+
+*   **Machine Learning Model:**
+    *   A pre-trained scikit-learn classification model ( RandomForestClassifier from the file `best_clf.pkl`) is loaded into the Flask application using `joblib`.
+    *   The model takes the preprocessed patient data as input and outputs a probability score for 30-day readmission risk.
+    *   The features used by the model and their required order are also loaded from the `best_clf.pkl` bundle.
+
+*   **Data Flow:**
+    1.  The user inputs patient data into the multi-step form in the Next.js frontend.
+    2.  On each step submission (or as data is entered), the frontend sends the collected data to the `/predict-risk` endpoint of the Flask backend.
+    3.  The Flask backend preprocesses the data and feeds it to the loaded machine learning model.
+    4.  The model predicts the risk score.
+    5.  The backend returns the risk score to the frontend.
+    6.  The frontend displays the risk score to the user.
+
+*   **Deployment:**
+    *   The Flask backend is deployed on Render.
+    *   The Next.js frontend can be deployed on platforms like Vercel or Netlify.
+
 ## Project Structure
 
 ```
