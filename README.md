@@ -9,6 +9,15 @@ Recure is a web application that uses advanced machine learning to help clinicia
 *   Harsh Mahajan
 *   Ishika Deshwal
 
+## Screenshots
+
+![Recure Frontpage](images/frontpage.jpg)
+
+![Recure step 1](images/step1.jpg)
+
+![Recure final score](images/finalscore.jpg)
+
+
 ## Features
 
 *   **Multi-step Risk Assessment:** A comprehensive, multi-step form to input patient demographics, clinical history, current admission details, severity assessment, and discharge planning information.
