@@ -2,20 +2,9 @@
 
 Recure is a web application that uses advanced machine learning to help clinicians identify patients at risk for 30-day readmission due to heart failure. By analyzing various patient data points, Recure provides a risk score, enabling data-driven decisions and improved patient outcomes.
 
-## Team Recure (Veersa Technologies Hackathon)
-
-*   Aryan Gupta 
-*   Diya Dhankhar
-*   Harsh Mahajan
-*   Ishika Deshwal
-
-## Problem Statement (Case-4)-
-
-![Problem Statement](images/PS.png)
-
 ## Source Code
 
-[View on GitHub](https://github.com/HarshMN2345/TEAM-RECURE-VEERSA-SUBMISSION)
+[View on GitHub](https://github.com/HarshMN2345/Recure)
 
 ## Design
 
